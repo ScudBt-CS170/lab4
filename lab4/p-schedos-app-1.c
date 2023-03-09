@@ -25,8 +25,10 @@ pmain(void)
 
 	for (i = 0; i < RUNCOUNT; i++) {
 		// Write characters to the console, yielding after each one.
+	        // lock(m);
 		*cursorpos++ = PRINTCHAR;
 		sys_yield();
+	        // unlock(m);
 	}
 
 	// Yield forever.

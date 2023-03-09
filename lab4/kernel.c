@@ -2,6 +2,7 @@
 #include "x86.h"
 #include "lib.h"
 #include "x86sync.h"
+//#include <stdlib.h>
 
 /*****************************************************************************
  * kernel
@@ -69,7 +70,7 @@ start(void)
 	segments_init();
 
         //zero = 202 / zero;
-	interrupt_controller_init(1);
+	interrupt_controller_init(0);
 	console_clear();
 
 	// Initialize process descriptors as empty
@@ -102,7 +103,7 @@ start(void)
 	cursorpos = (uint16_t *) 0xB8000;
 
 	// Initialize the scheduling algorithm.
-	scheduling_algorithm = 0;
+	scheduling_algorithm = 1;
 
 	// Switch to the first process.
 	run(&proc_array[1]);
@@ -208,7 +209,15 @@ schedule(void)
 	  }
 
 	} else if (scheduling_algorithm == 2) {
-
+	  int i = 0; // rand() % 10 + 1; // get random number from 1 to 10
+	  if (i > 0 && i < 2 && proc_array[1].p_state == P_RUNNABLE)
+	    run(&proc_array[1]);
+	  else if (i > 1 && i < 4 && proc_array[2].p_state == P_RUNNABLE)
+	    run(&proc_array[2]);
+	  else if (i > 3 && i < 7 && proc_array[3].p_state == P_RUNNABLE)
+	    run(&proc_array[3]);
+	  else if (i > 6 && i < 11 && proc_array[4].p_state == P_RUNNABLE)
+	    run(&proc_array[4]);
 	} else {
 	// If we get here, we are running an unknown scheduling algorithm.
 	cursorpos = console_printf(cursorpos, 0x100, "\nUnknown scheduling algorithm %d\n", scheduling_algorithm);
@@ -218,37 +227,37 @@ schedule(void)
 }
 
 
- typedef struct __lock_t {
-   int flag;
-   int guard;
-   queue_t *q;
- } lock_t;
+// typedef struct __lock_t {
+//   int flag;
+//   int guard;
+//  queue_t *q;
+// } lock_t;
 
- void lock_init(lock_t *m) {
-   m->flag = 0;
-   m->guard = 0;
-   queue_init(m->q);
- }
+// void lock_init(lock_t *m) {
+//   m->flag = 0;
+//   m->guard = 0;
+//  queue_init(m->q);
+// }
 
- void lock(lock_t *m) {
-   while (TestAndSet(&m->guard, 1) == 1)
-     ; //acquire guard lock by spinning
-   if (m->flag == 0) {
-     m->flag = 1; // lock is acquired
-     m->guard = 0;
-   } else {
-     queue_add(m->q, gettid());
-     m->guard = 0;
-     park();
-   }
- }
+// void lock(lock_t *m) {
+//  while (TestAndSet(&m->guard, 1) == 1)
+//     ; //acquire guard lock by spinning
+//   if (m->flag == 0) {
+//     m->flag = 1; // lock is acquired
+//     m->guard = 0;
+//   } else {
+//     queue_add(m->q, gettid());
+//     m->guard = 0;
+//     park();
+//   }
+// }
 
- void unlock(lock_t *m) {
-   while (TestAndSet(&m->guard, 1) == 1)
-     ; //acquire guard lock by spinning
-   if (queue_empty(m->q))
-     m->flag = 0; // let go of lock; no one wants it
-   else
-     unpark(queue_remove(m->q)); // hold lock (for next thread!)
-   m->guard = 0;
- }
+// void unlock(lock_t *m) {
+//   while (TestAndSet(&m->guard, 1) == 1)
+//     ; //acquire guard lock by spinning
+//   if (queue_empty(m->q))
+//     m->flag = 0; // let go of lock; no one wants it
+//   else
+//     unpark(queue_remove(m->q)); // hold lock (for next thread!)
+//   m->guard = 0;
+// }
