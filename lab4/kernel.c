@@ -1,6 +1,7 @@
 #include "kernel.h"
 #include "x86.h"
 #include "lib.h"
+#include "x86sync.h"
 
 /*****************************************************************************
  * kernel
@@ -67,8 +68,8 @@ start(void)
 	// Set up hardware (x86.c)
 	segments_init();
 
-        zero = 202 / zero;
-	interrupt_controller_init(0);
+        //zero = 202 / zero;
+	interrupt_controller_init(1);
 	console_clear();
 
 	// Initialize process descriptors as empty
@@ -186,21 +187,68 @@ interrupt(registers_t *reg)
 void
 schedule(void)
 {
-	pid_t pid = current->p_pid;
+        pid_t pid = current->p_pid;
 
-	if (scheduling_algorithm == 0)
+	if (scheduling_algorithm == 0) {
 		while (1) {
-			pid = (pid + 1) % NPROCS;
+		  pid = (pid + 1) % NPROCS;
 
 			// Run the selected process, but skip
 			// non-runnable processes.
 			// Note that the 'run' function does not return.
 			if (proc_array[pid].p_state == P_RUNNABLE)
-				run(&proc_array[pid]);
+			  run(&proc_array[pid]);
 		}
+	} else if (scheduling_algorithm == 1) {
+	  int i = 1;
+	  while (i < 5) {
+	    if (proc_array[i].p_state == P_RUNNABLE)
+	      run(&proc_array[i]);
+	    i++;
+	  }
 
+	} else if (scheduling_algorithm == 2) {
+
+	} else {
 	// If we get here, we are running an unknown scheduling algorithm.
 	cursorpos = console_printf(cursorpos, 0x100, "\nUnknown scheduling algorithm %d\n", scheduling_algorithm);
 	while (1)
 		/* do nothing */;
+	}
 }
+
+
+ typedef struct __lock_t {
+   int flag;
+   int guard;
+   queue_t *q;
+ } lock_t;
+
+ void lock_init(lock_t *m) {
+   m->flag = 0;
+   m->guard = 0;
+   queue_init(m->q);
+ }
+
+ void lock(lock_t *m) {
+   while (TestAndSet(&m->guard, 1) == 1)
+     ; //acquire guard lock by spinning
+   if (m->flag == 0) {
+     m->flag = 1; // lock is acquired
+     m->guard = 0;
+   } else {
+     queue_add(m->q, gettid());
+     m->guard = 0;
+     park();
+   }
+ }
+
+ void unlock(lock_t *m) {
+   while (TestAndSet(&m->guard, 1) == 1)
+     ; //acquire guard lock by spinning
+   if (queue_empty(m->q))
+     m->flag = 0; // let go of lock; no one wants it
+   else
+     unpark(queue_remove(m->q)); // hold lock (for next thread!)
+   m->guard = 0;
+ }
