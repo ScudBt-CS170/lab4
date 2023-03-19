@@ -126,6 +126,12 @@ void kernel(const char* command) {
         for (pid_t i = 1; i <= 4; ++i)
             process_setup(i, i - 1);
 
+    // Avoid processes to acces kernel memory
+    virtual_memory_map(kernel_pagetable, 0, 0, 0x100000, PTE_P|PTE_W);
+
+    // Still allow access to the console
+    virtual_memory_map(kernel_pagetable, (uintptr_t)console, (uintptr_t)console, PAGESIZE, PTE_P|PTE_W|PTE_U);
+
     // Switch to the first process using run()
     run(&processes[1]);
 }
