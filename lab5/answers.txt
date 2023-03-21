@@ -1,5 +1,5 @@
-Name:
-PERM #: 
+Name: Jonas Zhang
+PERM #: 7247299
 
 Collaborators (who you talked to about the lab, what you talked about):
 
@@ -16,3 +16,4 @@ Responses to exercises (if any) that need to go into answers.txt:
 
 
 Anything else you'd like us to know:
+done exercise 1,3,4, have all the code for 2 but copy_pagetable seems to be buggy (commented out as the result, please give me partial credit if possible).
